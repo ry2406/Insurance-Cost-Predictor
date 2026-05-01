@@ -7,16 +7,16 @@
     "subsample": 0.7
   },
   "metrics": {
-    "MAE": 2601.82,
-    "RMSE": 4759.42,
-    "R2": 0.8457
+    "MAE": 2566.65,
+    "RMSE": 4750.77,
+    "R2": 0.8462
   },
   "feature_importance": {
-    "age": 0.0661,
-    "sex": 0.0076,
-    "bmi": 0.0287,
-    "children": 0.0179,
-    "region": 0.011,
-    "bmi_smoker": 0.8688
+    "age": 0.0676,
+    "sex": 0.0068,
+    "bmi": 0.0243,
+    "children": 0.0188,
+    "region": 0.0119,
+    "bmi_smoker": 0.8707
   }
 }

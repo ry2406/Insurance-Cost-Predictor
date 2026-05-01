@@ -2,8 +2,8 @@
 
 A Streamlit web app that predicts annual medical insurance costs using ensemble methods, neural networks, and a from-scratch Mixture Density Network.
 
-**Team:** Gentle Eagles  (Ruide Yin, Ben Ronen, Allison Zhu, Ruize Ma)   
-**Course:** Spring 2026, Fundamentals of Machine Learning, Final Project, NYU     
+**Team:** Gentle Eagles (Ruide Yin, Ben Ronen, Allison Zhu, Ruize Ma)
+**Course:** Spring 2026, Fundamentals of Machine Learning, Final Project, NYU
 **Dataset:** [Kaggle Medical Insurance Dataset](https://www.kaggle.com/datasets/mirichoi0218/insurance) — 1,338 records, 7 features, no missing values
 
 ---
@@ -19,10 +19,10 @@ The charge distribution is strongly bimodal (driven by smoking status), which mo
 ### Block 1 — Direct Regression
 
 | Model | Description |
-|---|---|
+| --- | --- |
 | Linear Regression | Baseline model on log-transformed charges |
-| Random Forest | GridSearchCV-tuned ensemble (best params: max_depth=10, n_estimators=300) |
-| XGBoost | GridSearchCV-tuned gradient boosting |
+| Random Forest | GridSearchCV-tuned ensemble (best params: max_depth=10, n_estimators=300, min_samples_leaf=4, min_samples_split=10) |
+| XGBoost | GridSearchCV-tuned gradient boosting (best params: max_depth=3, n_estimators=100, learning_rate=0.05, subsample=0.7) |
 | MLP Regressor | PyTorch feed-forward network (64→32→16→1) with early stopping |
 | Quantile Regression | Pinball loss at quantiles 0.1, 0.5, 0.9 for prediction intervals |
 
@@ -43,8 +43,8 @@ K-means clustering (K=2–8, elbow + silhouette analysis) validates the EDA find
 All metrics are evaluated on the same 20% held-out test set (n=268, `random_state=12138`, stratified by smoker).
 
 | Model | R² | RMSE ($) | MAE ($) |
-|---|---|---|---|
-| XGBoost | 0.846 | 4,759 | 2,602 |
+| --- | --- | --- | --- |
+| XGBoost | 0.846 | 4,751 | 2,567 |
 | Random Forest | 0.843 | 4,805 | 2,630 |
 | MLP | 0.810 | 5,281 | 3,141 |
 | MDN | 0.790 | 5,552 | 2,874 |
@@ -91,7 +91,7 @@ Insurance-Cost-Predictor/
 ├── evaluation/
 │   └── feature_importance.py   # Feature importance helpers
 ├── app/
-│   ├── app.py                  # Multi-page Streamlit entry point
+│   ├── app.py                  # Multi-page Streamlit entry point + artifact recovery
 │   ├── shared.py               # Design system, UI components, inference logic
 │   ├── page_data_exploration.py
 │   ├── page_cost_predictor.py
@@ -103,9 +103,9 @@ Insurance-Cost-Predictor/
 
 ## Setup and Usage
 
-```bash
+```
 # Clone the repository
-git clone https://github.com/ry2406/Insurance-Cost-Predictor.git
+git clone https://github.com/yinruide/Insurance-Cost-Predictor.git
 cd Insurance-Cost-Predictor
 
 # Create and activate virtual environment
@@ -120,25 +120,29 @@ pip install -r requirements.txt
 streamlit run app/app.py
 ```
 
-Pre-trained model artifacts are included in `saved_models/`. The app loads them directly on startup — no retraining needed. If any artifact is missing, the app will automatically retrain that model on first launch.
+Pre-trained model artifacts are included in `saved_models/`. The app loads them directly on startup — no retraining needed.
+
+If any artifact is missing, the app's `ensure_artifacts()` function automatically retrains the missing models on first launch (Block 1 + Block 2). A first-time setup status panel shows progress; total cold-start training takes approximately 15–20 minutes on a typical laptop.
 
 To retrain a specific model manually:
 
-```bash
+```
 python models/linear_regression.py
 python models/random_forest.py
 python models/xgboost_model.py
 python models/mlp.py
 python models/quantile_regression.py
+python models/mdn.py
 python models/block2_classifier.py
 ```
 
 ## Key Design Decisions
 
-- **EDA before preprocessing:** All preprocessing choices (log transforms, outlier treatment, encoding) are grounded in EDA findings, not assumed upfront.
-- **Log-transform scoping:** `log1p(charges)` is applied only to models assuming normality (Linear Regression, Quantile Regression). Neural models (MLP, MDN) train on raw charges.
-- **Data leakage prevention:** Scaling is performed after train/test split, fit only on training data. The `bmi_smoker` interaction feature is excluded from classifier training to avoid target leakage.
-- **Consistent evaluation:** All models share the same 80/20 split with `random_state=12138`, stratified by smoker status.
+* **EDA before preprocessing:** All preprocessing choices (log transforms, outlier treatment, encoding) are grounded in EDA findings, not assumed upfront.
+* **Log-transform scoping:** `log1p(charges)` is applied only to models assuming normality (Linear Regression, Quantile Regression). Neural models (MLP, MDN) train on raw charges.
+* **Data leakage prevention:** Scaling is performed after train/test split, fit only on training data. The `bmi_smoker` interaction feature is excluded from classifier training to avoid target leakage.
+* **Consistent evaluation:** All models share the same 80/20 split with `random_state=12138`, stratified by smoker status.
+* **Robust artifact recovery:** `app.py` calls `ensure_artifacts()` before any page renders, so a fresh clone with empty `saved_models/` will retrain automatically rather than fail.
 
 ## Tech Stack
 
@@ -146,9 +150,9 @@ Python, PyTorch, scikit-learn, XGBoost, Streamlit, pandas, NumPy, matplotlib, se
 
 ## Team Contributions
 
-| Member | Actual Contributions |
-|---|---|
-| **Ruide Yin** | Data preprocessing pipeline (`preprocess.py`, `PREPROCESS_GUIDE.md`), full EDA (`eda.ipynb`, `eda_utils.py`), K-means clustering (`kmeans.py`), Streamlit Page 1 (`page_data_exploration.py`), repository architecture design, code review and technical coordination across all teammates, final branch merge and integration |
+| Member | Contributions |
+| --- | --- |
+| **Ruide Yin** | Data preprocessing pipeline (`preprocess.py`, `PREPROCESS_GUIDE.md`), full EDA (`eda.ipynb`, `eda_utils.py`), K-means clustering (`kmeans.py`), Streamlit Page 1 (`page_data_exploration.py`), repository architecture design, code review and technical coordination across all teammates, final branch merge and integration, `ensure_artifacts()` recovery layer in `app.py` |
 | **Ben Ronen** | Block 2 binary smoker classifier and subgroup regressors (`block2_classifier.py`, `block2_eda.ipynb`), Mixture Density Network from scratch (`mdn.py`), full-stack app integration: design system and inference pipeline (`shared.py`), Streamlit Page 2 (`page_cost_predictor.py`), Page 3 refactor (`page_model_comparison.py`), app shell (`app.py`), runtime stability fixes, model utility modules (`linear_regression.py`, `smoker_classifier.py`, `subgroup_regressors.py`, `feature_importance.py`) |
 | **Allison Zhu** | Random Forest with GridSearchCV (`random_forest.py`), XGBoost with GridSearchCV (`xgboost_model.py`), initial cost predictor page draft |
-| **Ruize Ma** | MLP regressor in PyTorch (`mlp.py`), Quantile Regression (`quantile_regression.py`), app shell initial draft (`app.py`), model comparison page initial draft (`page_model_comparison.py`) |
+| **Ruize Ma** | MLP regressor in PyTorch (`mlp.py`), Quantile Regression (`quantile_regression.py`), app shell initial draft (`page_model_comparison.py`) |
